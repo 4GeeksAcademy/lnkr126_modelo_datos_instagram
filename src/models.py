@@ -5,7 +5,6 @@ from typing import List
 
 db = SQLAlchemy()
 
-# 1. Tabla de asociación Muchos a Muchos para Seguidores
 follower = Table(
     "follower",
     db.metadata,
@@ -13,29 +12,21 @@ follower = Table(
     Column("user_to_id", Integer, ForeignKey("user.id"), primary_key=True)
 )
 
-# 2. Modelo de Usuario
-
-
 class User(db.Model):
     __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(
-        String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column( String(120), unique=True, nullable=False)
     firstname: Mapped[str] = mapped_column(String(40), nullable=False)
     lastname: Mapped[str] = mapped_column(String(40), nullable=False)
-    username: Mapped[str] = mapped_column(
-        String(40), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column( String(40), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
 
-    # Relación Uno a Muchos con Post
     posts: Mapped[List["Post"]] = relationship("Post", back_populates="user")
 
-    # Relación Uno a Muchos con Comment
     comments: Mapped[List["Comment"]] = relationship(back_populates="author")
 
-    # Relación Muchos a Muchos Autorreferencial (Seguidores)
     followers: Mapped[List["User"]] = relationship(
         "User",
         secondary=follower,
@@ -62,8 +53,6 @@ class User(db.Model):
             "is_active": self.is_active
         }
 
-# 3. Modelo de Publicación
-
 
 class Post(db.Model):
     __tablename__ = "post"
@@ -71,13 +60,10 @@ class Post(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
-    # Relación inversa con User
     user: Mapped["User"] = relationship(back_populates="posts")
 
-    # Relación Uno a Muchos con Media
     media: Mapped[List["Media"]] = relationship(back_populates="post")
 
-    # Relación Uno a Muchos con Comment
     comments: Mapped[List["Comment"]] = relationship(
         back_populates="post_public")
 
@@ -85,10 +71,9 @@ class Post(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
+            #uso esta sintaxis porque no son datos primitivos
             "media": [m.serialize() for m in self.media]
         }
-
-# 4. Modelo de Contenido Multimedia
 
 
 class Media(db.Model):
@@ -99,7 +84,6 @@ class Media(db.Model):
     type: Mapped[str] = mapped_column(String(10), nullable=False)
     post_id: Mapped[int] = mapped_column(ForeignKey("post.id"), nullable=False)
 
-    # Relación inversa con Post
     post: Mapped["Post"] = relationship(back_populates="media")
 
     def serialize(self):
@@ -109,18 +93,24 @@ class Media(db.Model):
             "type": self.type,
         }
 
-# 5. Modelo de Comentario
-
 
 class Comment(db.Model):
     __tablename__ = "comment"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     comment_text: Mapped[str] = mapped_column(String(255), nullable=False)
-    author_id: Mapped[int] = mapped_column(
-        ForeignKey("user.id"), nullable=False)
+    author_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
     post_id: Mapped[int] = mapped_column(ForeignKey("post.id"), nullable=False)
 
-    # Relaciones que completan los espejos con User y Post
     author: Mapped["User"] = relationship(back_populates="comments")
     post_public: Mapped["Post"] = relationship(back_populates="comments")
+
+    def serialize (self):
+        return {
+            "id": self.id,
+            "comment_text": self.comment_text,
+            "  author_id": self.  author_id,
+            "post_id": self.post_id
+        }
+        
+
